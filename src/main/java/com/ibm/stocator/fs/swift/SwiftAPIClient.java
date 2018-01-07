@@ -1,18 +1,17 @@
 /**
  * (C) Copyright IBM Corp. 2015, 2016
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.ibm.stocator.fs.swift;
@@ -25,11 +24,11 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.util.HashMap;
-import java.util.Properties;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 import org.javaswift.joss.client.factory.AccountConfig;
 import org.javaswift.joss.client.factory.AuthenticationMethod;
@@ -38,18 +37,6 @@ import org.javaswift.joss.model.Account;
 import org.javaswift.joss.model.Container;
 import org.javaswift.joss.model.DirectoryOrObject;
 import org.javaswift.joss.model.StoredObject;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.LocalDirAllocator;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.PathFilter;
-import org.apache.hadoop.mapreduce.TaskAttemptID;
-import org.apache.hadoop.fs.FileSystem.Statistics;
 
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
@@ -61,29 +48,39 @@ import com.ibm.stocator.fs.swift.auth.JossAccount;
 import com.ibm.stocator.fs.swift.auth.PasswordScopeAccessProvider;
 import com.ibm.stocator.fs.swift.http.ConnectionConfiguration;
 import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
-
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem.Statistics;
+import org.apache.hadoop.fs.LocalDirAllocator;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
+import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PASSWORD_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.KEYSTONE_V3_AUTH;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_AUTH_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_REGION_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_USERNAME_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_TENANT_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_AUTH_METHOD_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_CONTAINER_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PUBLIC_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_BLOCK_SIZE_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PROJECT_ID_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_USER_ID_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.FMODE_AUTOMATIC_DELETE_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.BUFFER_DIR_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.BUFFER_DIR;
-import static com.ibm.stocator.fs.swift.SwiftConstants.NON_STREAMING_UPLOAD_PROPERTY;
-import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
+import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;
+import static com.ibm.stocator.fs.swift.SwiftConstants.BUFFER_DIR;
+import static com.ibm.stocator.fs.swift.SwiftConstants.BUFFER_DIR_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.FMODE_AUTOMATIC_DELETE_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.KEYSTONE_V3_AUTH;
+import static com.ibm.stocator.fs.swift.SwiftConstants.NON_STREAMING_UPLOAD_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.PUBLIC_ACCESS;
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_AUTH_METHOD_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_AUTH_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_BLOCK_SIZE_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_CONTAINER_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PASSWORD_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PROJECT_ID_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PUBLIC_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_REGION_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_TENANT_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_USERNAME_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_USER_ID_PROPERTY;
 
 /**
  * Swift back-end driver
@@ -135,11 +132,11 @@ public class SwiftAPIClient implements IStoreClient {
   private Map<String, Boolean> cachedSparkJobsStatus;
 
   /*
-  * Contains map of objects and their metadata.
-  * Maintained at container listing and on-the-fly object requests,
-  * read at file status check.
-  * Caching can be done since objects are immutable.
-  */
+   * Contains map of objects and their metadata.
+   * Maintained at container listing and on-the-fly object requests,
+   * read at file status check.
+   * Caching can be done since objects are immutable.
+   */
   private SwiftObjectCache objectCache;
 
   /*
@@ -200,21 +197,34 @@ public class SwiftAPIClient implements IStoreClient {
     cachedSparkJobsStatus = new HashMap<String, Boolean>();
     schemaProvided = scheme;
     Properties props = ConfigurationHandler.initialize(filesystemURI, conf);
-    connectionConfiguration.setExecutionCount(conf.getInt(Constants.EXECUTION_RETRY,
-        ConnectionConfiguration.DEFAULT_EXECUTION_RETRY));
-    connectionConfiguration.setMaxPerRoute(conf.getInt(Constants.MAX_PER_ROUTE,
-        ConnectionConfiguration.DEFAULT_MAX_PER_ROUTE));
-    connectionConfiguration.setMaxTotal(conf.getInt(Constants.MAX_TOTAL_CONNECTIONS,
-        ConnectionConfiguration.DEFAULT_MAX_TOTAL_CONNECTIONS));
+    connectionConfiguration.setExecutionCount(conf.getInt(
+        Constants.EXECUTION_RETRY,
+        ConnectionConfiguration.DEFAULT_EXECUTION_RETRY
+    ));
+    connectionConfiguration.setMaxPerRoute(conf.getInt(
+        Constants.MAX_PER_ROUTE,
+        ConnectionConfiguration.DEFAULT_MAX_PER_ROUTE
+    ));
+    connectionConfiguration.setMaxTotal(conf.getInt(
+        Constants.MAX_TOTAL_CONNECTIONS,
+        ConnectionConfiguration.DEFAULT_MAX_TOTAL_CONNECTIONS
+    ));
     connectionConfiguration.setReqConnectionRequestTimeout(conf.getInt(
         Constants.REQUEST_CONNECTION_TIMEOUT,
-        ConnectionConfiguration.DEFAULT_REQUEST_CONNECTION_TIMEOUT));
-    connectionConfiguration.setReqConnectTimeout(conf.getInt(Constants.REQUEST_CONNECT_TIMEOUT,
-        ConnectionConfiguration.DEFAULT_REQUEST_CONNECT_TIMEOUT));
-    connectionConfiguration.setReqSocketTimeout(conf.getInt(Constants.REQUEST_SOCKET_TIMEOUT,
-        ConnectionConfiguration.DEFAULT_REQUEST_SOCKET_TIMEOUT));
-    connectionConfiguration.setSoTimeout(conf.getInt(Constants.SOCKET_TIMEOUT,
-        ConnectionConfiguration.DEFAULT_SOCKET_TIMEOUT));
+        ConnectionConfiguration.DEFAULT_REQUEST_CONNECTION_TIMEOUT
+    ));
+    connectionConfiguration.setReqConnectTimeout(conf.getInt(
+        Constants.REQUEST_CONNECT_TIMEOUT,
+        ConnectionConfiguration.DEFAULT_REQUEST_CONNECT_TIMEOUT
+    ));
+    connectionConfiguration.setReqSocketTimeout(conf.getInt(
+        Constants.REQUEST_SOCKET_TIMEOUT,
+        ConnectionConfiguration.DEFAULT_REQUEST_SOCKET_TIMEOUT
+    ));
+    connectionConfiguration.setSoTimeout(conf.getInt(
+        Constants.SOCKET_TIMEOUT,
+        ConnectionConfiguration.DEFAULT_SOCKET_TIMEOUT
+    ));
     LOG.trace("{} set connection manager", filesystemURI.toString());
     swiftConnectionManager = new SwiftConnectionManager(connectionConfiguration);
     LOG.trace("{}", connectionConfiguration.toString());
@@ -222,15 +232,21 @@ public class SwiftAPIClient implements IStoreClient {
     bufferDir = props.getProperty(BUFFER_DIR_PROPERTY, "");
     nonStreamingUpload = "true".equals(props.getProperty(NON_STREAMING_UPLOAD_PROPERTY, "false"));
     AccountConfig config = new AccountConfig();
-    fModeAutomaticDelete = "true".equals(props.getProperty(FMODE_AUTOMATIC_DELETE_PROPERTY,
-        "false"));
-    blockSize = Long.valueOf(props.getProperty(SWIFT_BLOCK_SIZE_PROPERTY,
-        "128")).longValue() * 1024 * 1024L;
+    fModeAutomaticDelete = "true".equals(props.getProperty(
+        FMODE_AUTOMATIC_DELETE_PROPERTY,
+        "false"
+    ));
+    blockSize = Long.valueOf(props.getProperty(
+        SWIFT_BLOCK_SIZE_PROPERTY,
+        "128"
+    )).longValue() * 1024 * 1024L;
     String authMethod = props.getProperty(SWIFT_AUTH_METHOD_PROPERTY);
     ObjectMapper mapper = new ObjectMapper();
     mapper.configure(SerializationConfig.Feature.WRAP_ROOT_VALUE, true);
-    boolean syncWithServer = conf.getBoolean(Constants.JOSS_SYNC_SERVER_TIME,
-        false);
+    boolean syncWithServer = conf.getBoolean(
+        Constants.JOSS_SYNC_SERVER_TIME,
+        false
+    );
     if (!syncWithServer) {
       LOG.trace("JOSS: disable sync time with server");
       config.setAllowSynchronizeWithServer(false);
@@ -273,7 +289,11 @@ public class SwiftAPIClient implements IStoreClient {
         String userId = props.getProperty(SWIFT_USER_ID_PROPERTY);
         String projectId = props.getProperty(SWIFT_PROJECT_ID_PROPERTY);
         PasswordScopeAccessProvider psap = new PasswordScopeAccessProvider(userId,
-            config.getPassword(), projectId, config.getAuthUrl(), preferredRegion);
+                                                                           config.getPassword(),
+                                                                           projectId,
+                                                                           config.getAuthUrl(),
+                                                                           preferredRegion
+        );
         config.setAccessProvider(psap);
       } else if (authMethod.equals("basic")) {
         config.setAuthenticationMethod(AuthenticationMethod.BASIC);
@@ -284,13 +304,13 @@ public class SwiftAPIClient implements IStoreClient {
         config.setUsername(props.getProperty(SWIFT_TENANT_PROPERTY));
       }
       LOG.trace("{}", config.toString());
-      mJossAccount = new JossAccount(config,preferredRegion, usePublicURL, swiftConnectionManager);
+      mJossAccount = new JossAccount(config, preferredRegion, usePublicURL, swiftConnectionManager);
       try {
         mJossAccount.createAccount();
       } catch (Exception e) {
         throw new IOException("Failed to create an account model."
-            + " Please check the provided access credentials."
-            + " Verify the validitiy of the auth url: " + config.getAuthUrl(), e);
+                              + " Please check the provided access credentials."
+                              + " Verify the validitiy of the auth url: " + config.getAuthUrl(), e);
       }
     }
     Container containerObj = mJossAccount.getAccount().getContainer(container);
@@ -324,8 +344,7 @@ public class SwiftAPIClient implements IStoreClient {
   }
 
   @Override
-  public FileStatus getFileStatus(String hostName,
-      Path path, String msg) throws IOException, FileNotFoundException {
+  public FileStatus getFileStatus(String hostName, Path path, String msg) throws IOException {
     LOG.trace("Get object metadata ({}): {}, hostname: {}", msg, path, hostName);
     Container cont = mJossAccount.getAccount().getContainer(container);
 
@@ -375,14 +394,17 @@ public class SwiftAPIClient implements IStoreClient {
         }
       }
       LOG.trace("{} is object. isDirectory: {}  lastModified: {}", path.toString(),
-          isDirectory, obj.getLastModified());
+                isDirectory, obj.getLastModified()
+      );
       return new FileStatus(obj.getContentLength(), isDirectory, 1, blockSize,
-              obj.getLastModified(), path);
+                            obj.getLastModified(), path
+      );
     }
     // We need to check if it may be a directory with no zero byte file associated
     LOG.trace("Checking if directory without 0 byte object associated {}", objectName);
     Collection<DirectoryOrObject> directoryFiles = cont.listDirectory(objectName + "/", '/',
-        "", 10);
+                                                                      "", 10
+    );
     if (directoryFiles != null) {
       LOG.trace("{} got {} candidates", objectName + "/", directoryFiles.size());
     }
@@ -433,7 +455,7 @@ public class SwiftAPIClient implements IStoreClient {
       objName = getObjName(hostName, path);
     }
     URL url = new URL(mJossAccount.getAccessURL() + "/" + container + "/"
-            + getURLEncodedObjName(objName));
+                      + getURLEncodedObjName(objName));
     //hadoop sometimes access parts directly, for example
     //path may be like: swift2d://dfsio2.dal05gil/io_write/part-00000
     //stocator need to support this and identify relevant object
@@ -451,11 +473,16 @@ public class SwiftAPIClient implements IStoreClient {
           objName = res[0].getPath().toString().substring(hostName.length());
         }
         url = new URL(mJossAccount.getAccessURL() + "/" + container + "/"
-                + getURLEncodedObjName(objName));
+                      + getURLEncodedObjName(objName));
       }
     }
-    SwiftInputStream sis = new SwiftInputStream(url.toString(), mJossAccount,
-        swiftConnectionManager, blockSize, objectCache, objName);
+    SwiftInputStream sis = new SwiftInputStream(url.toString(),
+                                                mJossAccount,
+                                                swiftConnectionManager,
+                                                blockSize,
+                                                objectCache,
+                                                objName
+    );
     return new FSDataInputStream(sis);
   }
 
@@ -482,11 +509,14 @@ public class SwiftAPIClient implements IStoreClient {
    * @return Array of Hadoop FileStatus
    * @throws IOException in case of network failure
    */
-  public FileStatus[] list(String hostName, Path path, boolean fullListing,
+  public FileStatus[] list(
+      String hostName, Path path, boolean fullListing,
       boolean prefixBased, Boolean isDirectory,
-      boolean flatListing, PathFilter filter) throws IOException {
+      boolean flatListing, PathFilter filter
+  ) throws IOException {
     LOG.debug("List container: raw path parent {} container {} hostname {}", path.toString(),
-        container, hostName);
+              container, hostName
+    );
     Container cObj = mJossAccount.getAccount().getContainer(container);
     String obj;
     if (path.toString().equals(container) || publicContainer) {
@@ -530,9 +560,10 @@ public class SwiftAPIClient implements IStoreClient {
           LOG.trace("{} does not match {}. Skipped", unifiedObjectName, obj);
           continue;
         } else if (isDirectory && !unifiedObjectName.equals(obj)
-            && !unifiedObjectName.startsWith(obj + "/")) {
+                   && !unifiedObjectName.startsWith(obj + "/")) {
           LOG.trace("directory {}. {} does not match {}. Skipped", isDirectory,
-              unifiedObjectName, obj);
+                    unifiedObjectName, obj
+          );
           continue;
         }
 
@@ -554,11 +585,13 @@ public class SwiftAPIClient implements IStoreClient {
                 .equals(nameWithoutTaskID(previousElement.getName()))) {
               // found failed that was not aborted.
               LOG.trace("Colision identified between {} and {}", previousElement.getName(),
-                  tmp.getName());
+                        tmp.getName()
+              );
               setCorrectSize(tmp, cObj);
               if (previousElement.getContentLength() < tmp.getContentLength()) {
                 LOG.trace("New candidate is {}. Removed {}", tmp.getName(),
-                    previousElement.getName());
+                          previousElement.getName()
+                );
                 previousElement = tmp.getAsObject();
               }
               continue;
@@ -569,7 +602,8 @@ public class SwiftAPIClient implements IStoreClient {
         if (previousElement.getContentLength() > 0 || fullListing) {
           fs = createFileStatus(previousElement, cObj, hostName, path);
           objectCache.put(getObjName(hostName, fs.getPath()), fs.getLen(),
-                  fs.getModificationTime());
+                          fs.getModificationTime()
+          );
           tmpResult.add(fs);
         }
         previousElement = tmp.getAsObject();
@@ -630,7 +664,8 @@ public class SwiftAPIClient implements IStoreClient {
    */
   @Override
   public FSDataOutputStream createObject(String objName, String contentType,
-      Map<String, String> metadata, Statistics statistics) throws IOException {
+                                         Map<String, String> metadata,
+                                         Statistics statistics) throws IOException {
     URL url = new URL(mJossAccount.getAccessURL() + "/" + getURLEncodedObjName(objName));
     LOG.debug("PUT {}. Content-Type : {}", url.toString(), contentType);
 
@@ -642,10 +677,12 @@ public class SwiftAPIClient implements IStoreClient {
       OutputStream sos;
       if (nonStreamingUpload) {
         sos = new SwiftNoStreamingOutputStream(mJossAccount, url, contentType,
-            metadata, swiftConnectionManager, this);
+                                               metadata, swiftConnectionManager, this
+        );
       } else {
         sos = new SwiftOutputStream(mJossAccount, url, contentType,
-            metadata, swiftConnectionManager);
+                                    metadata, swiftConnectionManager
+        );
       }
       return new FSDataOutputStream(sos, statistics);
     } catch (IOException e) {
@@ -663,7 +700,7 @@ public class SwiftAPIClient implements IStoreClient {
     LOG.debug("Object name to delete {}. Path {}", obj, path.toString());
     try {
       StoredObject so = mJossAccount.getAccount().getContainer(container)
-          .getObject(obj);
+                                    .getObject(obj);
       if (so.exists()) {
         so.delete();
         objectCache.remove(obj);
@@ -746,7 +783,7 @@ public class SwiftAPIClient implements IStoreClient {
     Account account = mJossAccount.getAccount();
     LOG.trace("HEAD {}", obj + "/" + HADOOP_SUCCESS);
     StoredObject so = account.getContainer(container).getObject(obj
-        + "/" + HADOOP_SUCCESS);
+                                                                + "/" + HADOOP_SUCCESS);
     Boolean isJobOK = Boolean.FALSE;
     if (so.exists()) {
       LOG.debug("{} exists", obj + "/" + HADOOP_SUCCESS);
@@ -754,6 +791,36 @@ public class SwiftAPIClient implements IStoreClient {
     }
     cachedSparkJobsStatus.put(objectName, isJobOK);
     return isJobOK.booleanValue();
+  }
+
+  /**
+   * Extracts the attempt from the path
+   * a/b/c/gil.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c
+   *    .csv-attempt_20160317132a_wrong_0000_m_000000_1
+   * Then attempt_20160317132a_wrong_0000_m_000000_1 is returned
+   *
+   * @param pathName
+   * @return attempt
+   */
+  private String extractAttempt(String pathName) {
+    LOG.info("Extracting attempt from " + pathName);
+    if (pathName.contains(HADOOP_ATTEMPT)) {
+      int startAttempt = pathName.lastIndexOf(HADOOP_ATTEMPT);
+      int stopAttempt = pathName.indexOf('-', startAttempt);
+
+      String attempt = pathName.substring(
+          startAttempt,
+          stopAttempt
+      );
+
+      try {
+        TaskAttemptID.forName(attempt);
+        return attempt;
+      } catch (IllegalArgumentException e) {
+        return null;
+      }
+    }
+    return null;
   }
 
   /**
@@ -769,17 +836,15 @@ public class SwiftAPIClient implements IStoreClient {
    * @return unified object name
    */
   private String extractUnifiedObjectName(String objectName) {
-    Path p = new Path(objectName);
-    if (objectName.indexOf("-" + HADOOP_ATTEMPT) > 0) {
-      String attempt = objectName.substring(objectName.lastIndexOf("-") + 1);
-      try {
-        TaskAttemptID.forName(attempt);
-        return p.getParent().toString();
-      } catch (IllegalArgumentException e) {
+    if (objectName.contains(HADOOP_ATTEMPT)) {
+      String attempt = extractAttempt(objectName);
+      if (attempt != null) {
+        return objectName.substring(0, objectName.lastIndexOf('/'));
+      } else {
         return objectName;
       }
-    } else if (objectName.indexOf(HADOOP_SUCCESS) > 0) {
-      return p.getParent().toString();
+    } else if (objectName.contains(HADOOP_SUCCESS)) {
+      return objectName.substring(0, objectName.lastIndexOf('/'));
     }
     return objectName;
   }
@@ -790,24 +855,21 @@ public class SwiftAPIClient implements IStoreClient {
    * a/b/c/m.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c
    *    .csv-attempt_20160317132a_wrong_0000_m_000000_1
    * Then a/b/c/m.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c.csv is returned.
-   * Perform test that attempt_20160317132a_wrong_0000_m_000000_1 is valid
    * task id identifier
    *
    * @param objectName
    * @return unified object name
    */
   private String nameWithoutTaskID(String objectName) {
-    int index = objectName.indexOf("-" + HADOOP_ATTEMPT);
-    if (index > 0) {
-      String attempt = objectName.substring(objectName.lastIndexOf("-") + 1);
-      try {
-        TaskAttemptID.forName(attempt);
-        return objectName.substring(0, index);
-      } catch (IllegalArgumentException e) {
-        return objectName;
-      }
+    String attempt = extractAttempt(objectName);
+    // Check if there is a valid attempt
+    if (attempt != null) {
+      String withoutAttempt = objectName.replace(attempt + "-", "");
+      int lastSlash = withoutAttempt.lastIndexOf('/');
+      return withoutAttempt.substring(lastSlash + 1);
+    } else {
+      return objectName;
     }
-    return objectName;
   }
 
   /**
@@ -854,12 +916,15 @@ public class SwiftAPIClient implements IStoreClient {
    * @throws IllegalArgumentException if error
    * @throws IOException if error
    */
-  private FileStatus createFileStatus(StoredObject tmp, Container cObj,
-      String hostName, Path path) throws IllegalArgumentException, IOException {
+  private FileStatus createFileStatus(
+      StoredObject tmp, Container cObj,
+      String hostName, Path path
+  ) throws IllegalArgumentException, IOException {
     String newMergedPath = getMergedPath(hostName, path, tmp.getName());
     return new FileStatus(tmp.getContentLength(), false, 1, blockSize,
-        Utils.lastModifiedAsLong(tmp.getLastModified()), 0, null,
-        null, null, new Path(newMergedPath));
+                          Utils.lastModifiedAsLong(tmp.getLastModified()), 0, null,
+                          null, null, new Path(newMergedPath)
+    );
   }
 
   @Override
@@ -889,7 +954,7 @@ public class SwiftAPIClient implements IStoreClient {
     LOG.trace("Create temp file for write {}. size {}", pathStr, size);
     if (directoryAllocator == null) {
       String bufferTargetDir = !bufferDir.isEmpty()
-          ? BUFFER_DIR : "hadoop.tmp.dir";
+                               ? BUFFER_DIR : "hadoop.tmp.dir";
       LOG.trace("Local buffer directorykey is {}", bufferTargetDir);
       directoryAllocator = new LocalDirAllocator(bufferTargetDir);
     }

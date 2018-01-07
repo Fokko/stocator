@@ -18,8 +18,6 @@
 package com.ibm.stocator.fs.common;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -29,7 +27,6 @@ import org.slf4j.LoggerFactory;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_TEMPORARY;
 import static com.ibm.stocator.fs.common.Constants.DEFAULT_FOUTPUTCOMMITTER_V1;
-import static com.ibm.stocator.fs.common.Constants.TRASH_FOLDER;
 
 public class StocatorPath {
   /*
@@ -38,7 +35,6 @@ public class StocatorPath {
   private static final Logger LOG = LoggerFactory.getLogger(StocatorPath.class);
 
   private String tempFileOriginator;
-  private String tempIdentifier;
   private String[] tempIdentifiers;
   private String hostNameScheme;
 
@@ -53,24 +49,12 @@ public class StocatorPath {
     tempFileOriginator = fileOriginator;
     hostNameScheme = hostName;
     if (tempFileOriginator.equals(DEFAULT_FOUTPUTCOMMITTER_V1)) {
-      tempIdentifier = HADOOP_TEMPORARY;
       tempIdentifiers = conf.getStrings("fs.stocator.temp.identifier",
           "_temporary/st_ID/_temporary/attempt_ID/");
     } else if (conf != null) {
       tempIdentifiers = conf.getStrings("fs.stocator.temp.identifier",
           "_temporary/st_ID/_temporary/attempt_ID/");
     }
-  }
-
-  public boolean isFileOutputComitter() {
-    return tempFileOriginator.equals(DEFAULT_FOUTPUTCOMMITTER_V1);
-  }
-
-  public boolean isTrashDestination(Path path) {
-    if (path.toString().contains(TRASH_FOLDER)) {
-      return true;
-    }
-    return false;
   }
 
   public boolean isTemporaryPathContain(Path path) {
@@ -127,10 +111,9 @@ public class StocatorPath {
    */
   public String getObjectNameRoot(Path fullPath, boolean addTaskId,
       String dataRoot, boolean addRoot) throws IOException {
-    String res = "";
+    String res;
     if (tempFileOriginator.equals(DEFAULT_FOUTPUTCOMMITTER_V1)) {
-      res =  parseHadoopFOutputCommitterV1(fullPath,
-          addTaskId, hostNameScheme);
+      res = parseHadoopFOutputCommitterV1(fullPath, addTaskId, hostNameScheme);
     } else {
       res = extractNameFromTempPath(fullPath, addTaskId, hostNameScheme, false);
     }
@@ -143,31 +126,6 @@ public class StocatorPath {
     return fullPath.toString();
   }
 
-  public String getGlobalPrefixName(Path fullPath,
-      String dataRoot, boolean addRoot) throws IOException {
-    String res = "";
-    res = extractNameFromTempPath(fullPath, false, hostNameScheme, true);
-    if (dataRoot.endsWith("/")) {
-      dataRoot = dataRoot.substring(0,  dataRoot.length() - 1);
-    }
-    if (!res.equals("")) {
-      if (addRoot) {
-        return dataRoot + "/" + res;
-      }
-      return res;
-    }
-    return fullPath.toString();
-  }
-
-  public String getActualPath(Path fullPath, boolean addTaskIdCompositeName,
-      String dataRoot) throws IOException {
-    if (isTemporaryPathContain(fullPath)) {
-      return hostNameScheme + getObjectNameRoot(fullPath, addTaskIdCompositeName,
-          dataRoot, false);
-    }
-    return fullPath.toString();
-  }
-
   /**
    * @param p path
    * @param addTaskID add task id to the extracted name
@@ -175,8 +133,8 @@ public class StocatorPath {
    * @param onlyPrefix return only prefix of the temp names
    * @return
    */
-  private String extractNameFromTempPath(Path p, boolean addTaskID, String hostName,
-      boolean onlyPrefix) {
+  private String extractNameFromTempPath(Path p, boolean addTaskID,
+                                         String hostName, boolean onlyPrefix) {
     LOG.trace("Extract name from {}", p.toString());
     String path = p.toString();
     // if path starts with host name - no need it, remove.
@@ -186,23 +144,19 @@ public class StocatorPath {
     // loop over all temporary identifiers and see if match
     boolean match = true;
     String midName = "";
-    String namePrefix = "";
     for (String tempPath : tempIdentifiers) {
-      LOG.trace("Temp identifier {}",tempPath);
+      LOG.trace("Temp identifier {}", tempPath);
       String taskAttempt = null;
-      match = true;
       String[] tempPathComponents = tempPath.split("/");
       int startIndex = path.indexOf(tempPathComponents[0].replace("ID", ""));
       // if the 1st one match - most likely we hit the right one.
       // otherwise - proceed to the next temporary structure
       if (startIndex < 0) {
-        match = false;
         continue;
       }
       // get all the path components that are prefixed the temporary identifier
-      namePrefix = path.substring(0, startIndex - 1);
+      String namePrefix = path.substring(0, startIndex - 1);
       if (namePrefix.endsWith("_")) {
-        match = false;
         break;
       }
       if (onlyPrefix) {
@@ -224,7 +178,7 @@ public class StocatorPath {
         if (tempPathComponents[i].equals("st_ID")) {
           continue;
         } else if (tempPathComponents[i].equals("_ADD_")) {
-          midName = midName + "/" + posixSplit[i];
+          midName += "/" + posixSplit[i];
         } else if (!tempPathComponents[i].contains("ID")
             && !tempPathComponents[i].equals(posixSplit[i])) {
           match = false;
@@ -239,7 +193,7 @@ public class StocatorPath {
             match = false;
             break;
           }
-          if (addTaskID && suffixID != null && suffixID.equals("ID")) {
+          if (addTaskID && suffixID.equals("ID")) {
             taskAttempt = Utils.extractTaskID(posixSplit[i], prefixID);
           }
         }
@@ -257,7 +211,7 @@ public class StocatorPath {
         }
         if (posixSplit.length > tempPathComponents.length) {
           if (taskAttempt != null) {
-            return namePrefix + "/" + posixSplit[posixSplit.length - 1] + "-" + taskAttempt;
+            return namePrefix + "/" + taskAttempt + "-" + posixSplit[posixSplit.length - 1];
           }
           return namePrefix + "/" + posixSplit[posixSplit.length - 1];
         }
@@ -274,19 +228,19 @@ public class StocatorPath {
    * aa/bb/cc/201610052038_0001_m_000007_15-one3.txt
    * otherwise object name will be aa/bb/cc/one3.txt
    *
-   * @param path path to extract from
+   * @param fullPath path to extract from
    * @param addTaskIdCompositeName if true will add task-id to the object name
    * @param hostNameScheme the host name
    * @return new object name
    * @throws IOException if object name is missing
    */
   private String parseHadoopFOutputCommitterV1(Path fullPath,
-      boolean addTaskIdCompositeName, String hostNameScheme) throws IOException {
-    String boundary = HADOOP_TEMPORARY;
+                                               boolean addTaskIdCompositeName,
+                                               String hostNameScheme) throws IOException {
     String path = fullPath.toString();
     String noPrefix = path.substring(hostNameScheme.length());
-    int npIdx = noPrefix.indexOf(boundary);
-    String objectName = "";
+    int npIdx = noPrefix.indexOf(HADOOP_TEMPORARY);
+    String objectName;
     if (npIdx >= 0) {
       if (npIdx == 0 || npIdx == 1 && noPrefix.startsWith("/")) {
         //no object name present
@@ -311,8 +265,20 @@ public class StocatorPath {
           if (objName == null) {
             objName = fullPath.getName();
           }
-          if (taskAttempt != null && !objName.startsWith(HADOOP_ATTEMPT)) {
-            objName = objName + "-" + taskAttempt;
+          if (!objName.startsWith(HADOOP_ATTEMPT)) {
+            if (objName.contains("/")) {
+              int lastSlash = objName.lastIndexOf('/');
+              /*
+              YEAR=2003/file.txt
+              get transformed to
+              YEAR-2003/attempt_201610038_0001_m_000007_15-file.txt
+               */
+              String newObjectName = objName.substring(0, lastSlash) + "/";
+              newObjectName += taskAttempt + "-" + objName.substring(lastSlash + 1);
+              objName = newObjectName;
+            } else {
+              objName = taskAttempt + "-" + objName;
+            }
           }
           objectName = objectName + "/" + objName;
         }
@@ -321,39 +287,4 @@ public class StocatorPath {
     }
     return noPrefix;
   }
-
-  public List<Tuple<String, String>> getAllPartitions(String path) {
-    List<Tuple<String, String>> res = new ArrayList<>();
-    if (path.contains("=")) {
-      String[] components = path.split("/");
-      for (String component : components) {
-        int pos = component.indexOf("=");
-        if (pos > 0) {
-          String key = component.substring(0, pos);
-          String value = component.substring(pos + 1);
-          res.add(new Tuple<String, String>(key, value));
-        }
-      }
-    }
-    return res;
-  }
-
-  public boolean isPartitionTarget(Path path) {
-    String name = path.getName();
-    LOG.debug("Is partition target for {} from {}", name, path.toString());
-    if (name != null && name.contains("=")) {
-      return true;
-    }
-    return false;
-  }
-
-  public boolean isPartitionExists(Path path) {
-    String name = path.toString();
-    LOG.debug("Is partition target for {} from {}", name, path.toString());
-    if (name != null && name.contains("=")) {
-      return true;
-    }
-    return false;
-  }
-
 }

@@ -332,7 +332,7 @@ public class Utils {
       int ind = path.indexOf(identifier);
       String prf = path.substring(ind + identifier.length());
       int boundary = prf.length();
-      if (prf.indexOf("/") > 0) {
+      if (prf.contains("/")) {
         boundary = prf.indexOf("/");
       }
       String taskID =  prf.substring(0, boundary);

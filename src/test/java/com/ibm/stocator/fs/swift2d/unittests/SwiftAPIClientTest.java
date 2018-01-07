@@ -86,15 +86,15 @@ public class SwiftAPIClientTest {
             objectUnified, result);
 
     input = objectUnified + "/"
-        + "part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c.csv-"
-        + "attempt_201603171328_0000_m_000000_1";
+        + "attempt_201603171328_0000_m_000000_1-"
+        + "part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c.csv";
     result = Whitebox.invokeMethod(mSwiftAPIClient, "extractUnifiedObjectName", input);
     Assert.assertEquals("extractUnifiedObjectName() shows incorrect name with attempt",
             objectUnified, result);
 
-    input = "a/b/c/gil.data/"
-        + "part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c.csv-"
-        + "attempt_20160317132a_wrong_0000_m_000000_1";
+    input = objectUnified + "/"
+        + "attempt_20160317132a_wrong_0000_m_000000_1-"
+        + "part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c.csv";
     result = Whitebox.invokeMethod(mSwiftAPIClient, "extractUnifiedObjectName", input);
     Assert.assertEquals("extractUnifiedObjectName() shows incorrect name with wrong taskAttemptID",
             input, result);
@@ -102,18 +102,16 @@ public class SwiftAPIClientTest {
 
   @Test
   public void nameWithoutTaskIDTest() throws Exception {
-    String objectName = "a/b/c/gil.data/"
-            + "part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c.csv";
+    String objectPath = "a/b/c/gil.data/";
+    String objectName = "part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c.csv";
 
-    String input = objectName;
-    input = objectName
-            + "-attempt_201603171328_0000_m_000000_1";
+    // Should parse correctly
+    String input = objectPath + "attempt_201603171328_0000_m_000000_1-" + objectName;
     String result = Whitebox.invokeMethod(mSwiftAPIClient, "nameWithoutTaskID", input);
-    Assert.assertEquals("nameWithoutTaskID() shows incorrect name",
-            objectName, result);
+    Assert.assertEquals("nameWithoutTaskID() shows incorrect name", objectName, result);
 
-    input = objectName
-            + "attempt_20160317132a_wrong_0000_m_000000_1";
+    // Incorrect task attempt
+    input = objectPath + "attempt_20160317132a_wrong_0000_m_000000_1-" + objectName;
     result = Whitebox.invokeMethod(mSwiftAPIClient, "nameWithoutTaskID", input);
     Assert.assertEquals("nameWithoutTaskID() shows incorrect name with wrong taskAttemptID",
             input, result);
