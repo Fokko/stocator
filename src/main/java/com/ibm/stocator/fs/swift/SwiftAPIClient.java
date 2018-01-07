@@ -48,7 +48,6 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
-import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.fs.FileSystem.Statistics;
 
 import com.ibm.stocator.fs.common.Constants;
@@ -82,7 +81,6 @@ import static com.ibm.stocator.fs.swift.SwiftConstants.BUFFER_DIR_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.BUFFER_DIR;
 import static com.ibm.stocator.fs.swift.SwiftConstants.NON_STREAMING_UPLOAD_PROPERTY;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;
-import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 import static com.ibm.stocator.fs.swift.SwiftConstants.PUBLIC_ACCESS;
 
 /**
@@ -419,7 +417,7 @@ public class SwiftAPIClient implements IStoreClient {
       return false;
     }
     try {
-      FileStatus status = getFileStatus(hostName, path, "exists");
+      getFileStatus(hostName, path, "exists");
     } catch (FileNotFoundException e) {
       return false;
     }
@@ -550,8 +548,8 @@ public class SwiftAPIClient implements IStoreClient {
             // if we here - data created by spark and job completed successfully
             // however there be might parts of failed tasks that were not aborted
             // we need to make sure there are no failed attempts
-            if (nameWithoutTaskID(tmp.getName())
-                .equals(nameWithoutTaskID(previousElement.getName()))) {
+            if (extractUnifiedObjectName(tmp.getName())
+                .equals(extractUnifiedObjectName(previousElement.getName()))) {
               // found failed that was not aborted.
               LOG.trace("Colision identified between {} and {}", previousElement.getName(),
                   tmp.getName());
@@ -762,52 +760,12 @@ public class SwiftAPIClient implements IStoreClient {
    * a/b/c/gil.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c
    *    .csv-attempt_20160317132a_wrong_0000_m_000000_1
    * Then a/b/c/gil.data is returned.
-   * Code testing that attempt_20160317132a_wrong_0000_m_000000_1 is valid
-   * task id identifier
    *
    * @param objectName
    * @return unified object name
    */
   private String extractUnifiedObjectName(String objectName) {
-    Path p = new Path(objectName);
-    if (objectName.indexOf("-" + HADOOP_ATTEMPT) > 0) {
-      String attempt = objectName.substring(objectName.lastIndexOf("-") + 1);
-      try {
-        TaskAttemptID.forName(attempt);
-        return p.getParent().toString();
-      } catch (IllegalArgumentException e) {
-        return objectName;
-      }
-    } else if (objectName.indexOf(HADOOP_SUCCESS) > 0) {
-      return p.getParent().toString();
-    }
-    return objectName;
-  }
-
-  /**
-   * Accepts any object name.
-   * If object name is of the form
-   * a/b/c/m.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c
-   *    .csv-attempt_20160317132a_wrong_0000_m_000000_1
-   * Then a/b/c/m.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c.csv is returned.
-   * Perform test that attempt_20160317132a_wrong_0000_m_000000_1 is valid
-   * task id identifier
-   *
-   * @param objectName
-   * @return unified object name
-   */
-  private String nameWithoutTaskID(String objectName) {
-    int index = objectName.indexOf("-" + HADOOP_ATTEMPT);
-    if (index > 0) {
-      String attempt = objectName.substring(objectName.lastIndexOf("-") + 1);
-      try {
-        TaskAttemptID.forName(attempt);
-        return objectName.substring(0, index);
-      } catch (IllegalArgumentException e) {
-        return objectName;
-      }
-    }
-    return objectName;
+    return new Path(objectName).getParent().toString();
   }
 
   /**

@@ -256,9 +256,6 @@ public class StocatorPath {
           }
         }
         if (posixSplit.length > tempPathComponents.length) {
-          if (taskAttempt != null) {
-            return namePrefix + "/" + posixSplit[posixSplit.length - 1] + "-" + taskAttempt;
-          }
           return namePrefix + "/" + posixSplit[posixSplit.length - 1];
         }
         return namePrefix;
@@ -274,7 +271,7 @@ public class StocatorPath {
    * aa/bb/cc/201610052038_0001_m_000007_15-one3.txt
    * otherwise object name will be aa/bb/cc/one3.txt
    *
-   * @param path path to extract from
+   * @param fullPath path to extract from
    * @param addTaskIdCompositeName if true will add task-id to the object name
    * @param hostNameScheme the host name
    * @return new object name
@@ -310,9 +307,6 @@ public class StocatorPath {
           }
           if (objName == null) {
             objName = fullPath.getName();
-          }
-          if (taskAttempt != null && !objName.startsWith(HADOOP_ATTEMPT)) {
-            objName = objName + "-" + taskAttempt;
           }
           objectName = objectName + "/" + objName;
         }

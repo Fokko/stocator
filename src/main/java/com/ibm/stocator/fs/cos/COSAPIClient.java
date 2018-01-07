@@ -1048,7 +1048,7 @@ public class COSAPIClient implements IStoreClient {
    * returned. Perform test that attempt_20160317132wrong_0000_m_000000_1 is
    * valid task id identifier
    *
-   * @param objectName
+   * @param objectKey
    * @return unified object name
    */
   private String nameWithoutTaskID(String objectKey) {
